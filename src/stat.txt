@@ -1,0 +1,9 @@
+TEST SET:
+MAX sentence length: 309 tokens
+MAX content  length: 1449 tokens
+VAL SET:
+MAX sentence length: 128 tokens
+MAX content  length: 1961 tokens
+TRAIN SET:
+MAX sentence length: 343 tokens
+MAX content  length: 1723 tokens
