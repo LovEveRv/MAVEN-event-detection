@@ -9,9 +9,13 @@ class MavenSet(data.Dataset):
     MAVEN Dataset
     """
 
-    def __init__(self, root, split='train'):
+    def __init__(self, root, tokenizer, split='train'):
         super().__init__()
         self.split = split
+        self.tokenizer = tokenizer
+        self.tokenizer.add_special_tokens({
+            'additional_special_tokens': [config.trigger_start_token, config.trigger_end_token]
+        })
         if split == 'train':
             file_path = os.path.join(root, 'train.jsonl')
         elif split == 'val':
@@ -61,7 +65,7 @@ class MavenSet(data.Dataset):
                     })
             else:
                 for word in doc['candidates']:
-                    type_id = None  # need to predict
+                    type_id = -100  # need to predict
                     tokens = content[word['sent_id']]['tokens']
                     offset = word['offset']
                     tokens = self._add_special_tokens(tokens, offset)
@@ -76,6 +80,9 @@ class MavenSet(data.Dataset):
     def _add_special_tokens(self, tokens, offset):
         head = offset[0]
         tail = offset[1]
+        # convert to lower case
+        for i in range(len(tokens)):
+            tokens[i] = tokens[i].lower()
         new_tokens = tokens[:head] + [config.trigger_start_token] + tokens[head:tail] + [config.trigger_end_token] + tokens[tail:]
         return new_tokens
 
@@ -99,21 +106,34 @@ class MavenSet(data.Dataset):
     
     def __getitem__(self, index):
         sample = self.data[index]
-        return sample['doc_id'], sample['word_id'], sample['tokens'], sample['type']
+        token_ids = tokenizer.encode(sample['tokens'], max_length=512, return_tensors='pt', padding='max_length')
+        return sample['doc_id'], sample['word_id'], token_ids, sample['type']
+
+
+def MavenLoader(root, tokenizer, split, batch_size, num_workers=0):
+    dataset = MavenSet(root, tokenizer, split)
+    shuffle = split == 'train'
+    return data.DataLoader(
+        dataset=dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        pin_memory=True,
+        num_workers=num_workers
+    )
 
 
 if __name__ == '__main__':
     """
     For test only
-    """
-    dataset = MavenSet('../MAVEN', 'test')
-    # dataset.stat()
-    print(len(dataset))
-    print(dataset[0])
-    print(dataset[1])
-    # dataset = MavenSet('../MAVEN', 'val')
-    # dataset.stat()
+    """  
+    # dataset = MavenSet('../MAVEN', 'test')
     # print(len(dataset))
-    # dataset = MavenSet('../MAVEN', 'train')
-    # dataset.stat()
-    # print(len(dataset))
+    # print(dataset[0])
+    # print(dataset[1])
+    from transformers import BertTokenizer
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    loader = MavenLoader('../MAVEN', tokenizer, 'test', 4)
+    for i, data in enumerate(loader):
+        doc_ids, word_ids, tokens, labels = data
+        print(tokens)
+        break
