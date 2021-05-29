@@ -13,9 +13,6 @@ class MavenSet(data.Dataset):
         super().__init__()
         self.split = split
         self.tokenizer = tokenizer
-        self.tokenizer.add_special_tokens({
-            'additional_special_tokens': [config.trigger_start_token, config.trigger_end_token]
-        })
         if split == 'train':
             file_path = os.path.join(root, 'train.jsonl')
         elif split == 'val':
@@ -83,7 +80,8 @@ class MavenSet(data.Dataset):
         # convert to lower case
         for i in range(len(tokens)):
             tokens[i] = tokens[i].lower()
-        new_tokens = tokens[:head] + [config.trigger_start_token] + tokens[head:tail] + [config.trigger_end_token] + tokens[tail:]
+        new_tokens = [self.tokenizer.cls_token] + tokens[:head] + [config.trigger_start_token] + \
+            tokens[head:tail] + [config.trigger_end_token] + tokens[tail:]
         return new_tokens
 
     def stat(self):
@@ -106,8 +104,14 @@ class MavenSet(data.Dataset):
     
     def __getitem__(self, index):
         sample = self.data[index]
-        token_ids = tokenizer.encode(sample['tokens'], max_length=512, return_tensors='pt', padding='max_length')
-        return sample['doc_id'], sample['word_id'], token_ids, sample['type']
+        token_ids = self.tokenizer.convert_tokens_to_ids(sample['tokens'])
+        if len(token_ids) < config.sentence_max_length:  # pad to max
+            current_len = len(token_ids)
+            token_ids.extend([self.tokenizer.pad_token_id] * (config.sentence_max_length - current_len))
+        else:
+            token_ids = token_ids[:config.sentence_max_length]  # cut off at max length
+        pn_label = 1 if sample['type'] > 0 else 0  # 1 for positive, 0 for negative
+        return sample['doc_id'], sample['word_id'], torch.tensor(token_ids), sample['type'], pn_label
 
 
 def MavenLoader(root, tokenizer, split, batch_size, num_workers=0):
@@ -134,6 +138,6 @@ if __name__ == '__main__':
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     loader = MavenLoader('../MAVEN', tokenizer, 'test', 4)
     for i, data in enumerate(loader):
-        doc_ids, word_ids, tokens, labels = data
+        doc_ids, word_ids, tokens, labels, pn_labels = data
         print(tokens)
         break
