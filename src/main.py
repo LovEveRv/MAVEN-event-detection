@@ -6,6 +6,7 @@ import config
 from model import BertOneStageModel, BertTwoStageModel
 from train import train_one_stage_model, train_two_stage_model
 from dataloader import MavenLoader, DistributedMavenLoader
+from evaluate import get_submission
 from transformers import BertTokenizer
 
 
@@ -53,6 +54,11 @@ def main(args):
 
     if args.task == 'train':
         train(args, model, optimizer, train_loader, valid_loader, epochs=args.epochs)
+        result = get_submission(args, model, test_loader)
+        with open(config.result_jsonl_path, 'w', encoding='utf-8') as f:
+            f.write(result)
+    elif args.task == 'test':
+        pass
     else:
         raise NotImplementedError()
 
@@ -79,6 +85,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--logging', type=int, default=0,
         help='Logging interval, 0 for no logging')
+    parser.add_argument('--ckpt', type=str,
+        help='Checkpoint path to load')
 
     parser.add_argument('--distributed', action='store_true', default=False,
         help='Enable distributed training')

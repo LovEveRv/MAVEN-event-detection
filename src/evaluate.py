@@ -1,12 +1,35 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import json
 from tqdm import tqdm
 from sklearn.metrics import classification_report
 
 
 def get_submission(args, model, loader):
-    pass
+    if args.model == 'bert-two-stage':
+        evaluate = evaluate_two_stage_model
+    elif args.model == 'bert-one-stage':
+        evaluate = evaluate_one_stage_model
+    else:
+        raise NotImplementedError()
+    
+    doc_ids, word_ids, pred_list = evaluate(args, model, loader)
+    pred_obj = {}
+    for doc_id, word_id, pred in zip(doc_ids, word_ids, pred_list):
+        if doc_id not in pred_obj:
+            pred_obj[doc_id] = {
+                'id': doc_id,
+                'predictions': []
+            }
+        pred_obj[doc_id]['predictions'].append({
+            'id': word_id,
+            'type_id': pred
+        })
+    jsonl_str = ''
+    for k, v in pred_obj.items():
+        jsonl_str += json.dumps(v) + '\n'
+    return jsonl_str
 
 
 def evaluate_one_stage_model(args, model, loader):
