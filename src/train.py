@@ -33,10 +33,11 @@ def train_two_stage_model(args, model, optimizer, train_loader, val_loader, epoc
             loss_cl = criterion_cl(logits_cl, labels)
             epoch_loss_tf_list.append(loss_tf.item())
             epoch_loss_cl_list.append(loss_cl.item())
-            loss = loss_tf + loss_cl
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
+            tr_loss = (loss_tf + loss_cl) / args.grad_acum_step
+            tr_loss.backward()
+            if (i + 1) % args.grad_acum_step == 0:
+                optimizer.step()
+                optimizer.zero_grad()
             if args.logging > 0 and (i + 1) % args.logging == 0:
                 print('loss_tf = {}'.format(loss_tf.item()))
                 print('loss_cl = {}'.format(loss_cl.item()))

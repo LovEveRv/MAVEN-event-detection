@@ -46,6 +46,8 @@ if __name__ == '__main__':
         help='Learning rate')
     parser.add_argument('--epochs', default=10, type=int,
         help='Training epochs')
+    parser.add_argument('--grad_acum_step', default=1, type=int,
+        help='Gradient accumulation step')
 
     parser.add_argument('--maven_dir', type=str,
         help='Path to MAVEN dataset directory')
