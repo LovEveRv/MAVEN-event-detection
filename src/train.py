@@ -1,7 +1,6 @@
 import os
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import config
 import numpy as np
 from transformers import BertTokenizer
@@ -10,15 +9,14 @@ from utils import save_checkpoint
 from evaluate import evaluate_one_stage_model, evaluate_two_stage_model
 
 
-def train_one_stage_model(args, model, train_loader, val_loader, epochs=10):
+def train_one_stage_model(args, model, optimizer, train_loader, val_loader, epochs=10):
     pass
 
 
-def train_two_stage_model(args, model, train_loader, val_loader, epochs=10):
+def train_two_stage_model(args, model, optimizer, train_loader, val_loader, epochs=10):
     criterion_tf = nn.CrossEntropyLoss()
     criterion_cl = nn.CrossEntropyLoss(ignore_index=0)  # ignore 0 type
     model.train()
-    optimizer = optim.Adam(model.parameters(), args.lr)
 
     for epoch in range(1, epochs + 1):
         print('Training epoch {}/{}:'.format(epoch, epochs))

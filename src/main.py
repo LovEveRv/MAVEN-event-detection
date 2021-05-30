@@ -1,5 +1,6 @@
 import argparse
 import torch
+import torch.optim as optim
 import config
 from model import BertOneStageModel, BertTwoStageModel
 from train import train_one_stage_model, train_two_stage_model
@@ -25,12 +26,14 @@ def main(args):
     if args.cuda:
         model = model.cuda()
 
+    optimizer = optim.Adam(model.parameters(), args.lr)
+
     train_loader = MavenLoader(args.maven_dir, tokenizer, 'train', args.batch_size)
     valid_loader = MavenLoader(args.maven_dir, tokenizer, 'val', args.batch_size)
     test_loader  = MavenLoader(args.maven_dir, tokenizer, 'test', args.batch_size)
 
     if args.task == 'train':
-        train(args, model, train_loader, valid_loader, epochs=args.epochs)
+        train(args, model, optimizer, train_loader, valid_loader, epochs=args.epochs)
 
 
 if __name__ == '__main__':
