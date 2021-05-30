@@ -40,7 +40,7 @@ def main(args):
     if args.cuda:
         model = model.cuda()
     if args.distributed:
-        model = nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
 
     optimizer = optim.Adam(model.parameters(), args.lr)
 
