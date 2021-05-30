@@ -6,10 +6,12 @@ from tqdm import tqdm
 from sklearn.metrics import classification_report
 
 
+@torch.no_grad()
 def evaluate_one_stage_model(args, model, loader):
     pass
 
 
+@torch.no_grad()
 def evaluate_two_stage_model(args, model, loader):
     criterion_tf = nn.CrossEntropyLoss()
     criterion_cl = nn.CrossEntropyLoss(ignore_index=0)  # ignore 0 type
@@ -47,9 +49,9 @@ def evaluate_two_stage_model(args, model, loader):
     print('Average loss_tf: {}'.format(np.mean(loss_tf_list)))
     print('Average loss_cl: {}'.format(np.mean(loss_cl_list)))
     print(classification_report(gt_labels, pred_list, digits=4))
-    return doc_ids, word_ids, pred_list
 
 
+@torch.no_grad()
 def test(args, model, loader):
     model.eval()
 
