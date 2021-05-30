@@ -16,7 +16,7 @@ class BertOneStageModel(nn.Module):
         self.fc = nn.Linear(768, config.maven_class_numbers, bias=True)
 
     def forward(self, input_ids):
-        rep = self.bert(input_ids=input_ids, return_dict=False)
+        rep = self.bert(input_ids=input_ids)
         rep = rep[1]
         rep = self.drop(rep)
         logits = self.fc(rep)
@@ -36,7 +36,7 @@ class BertTwoStageModel(nn.Module):
         self.fc2 = nn.Linear(768, config.maven_class_numbers, bias=True)
 
     def forward(self, input_ids):
-        rep = self.bert(input_ids=input_ids, return_dict=False)
+        rep = self.bert(input_ids=input_ids)
         rep = rep[1]
         rep = self.drop(rep)
         logits_tf = self.fc1(rep)  # used for predicting T/F
