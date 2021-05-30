@@ -81,7 +81,7 @@ class MavenSet(data.Dataset):
         for i in range(len(tokens)):
             tokens[i] = tokens[i].lower()
         new_tokens = [self.tokenizer.cls_token] + tokens[:head] + [config.trigger_start_token] + \
-            tokens[head:tail] + [config.trigger_end_token] + tokens[tail:]
+            tokens[head:tail] + [config.trigger_end_token] + tokens[tail:] + [self.tokenizer.sep_token]
         return new_tokens
 
     def stat(self):
