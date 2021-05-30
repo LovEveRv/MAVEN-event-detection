@@ -31,9 +31,9 @@ class MavenSet(data.Dataset):
         
         self.data = self._gen_samples(self.rawdata)
 
-    def _gen_samples(self, data):
+    def _gen_samples(self, rawdata):
         samples = []
-        for doc in data:
+        for doc in rawdata:
             doc_id = doc['id']
             content = doc['content']
             if self.split != 'test':
@@ -123,6 +123,18 @@ def MavenLoader(root, tokenizer, split, batch_size, num_workers=0):
         shuffle=shuffle,
         pin_memory=True,
         num_workers=num_workers
+    )
+
+
+def DistributedMavenLoader(root, tokenizer, split, batch_size, num_workers=0):
+    dataset = MavenSet(root, tokenizer, split)
+    shuffle = split == 'train'
+    distributed_sampler = data.distributed.DistributedSampler(dataset, shuffle=shuffle)
+    return data.DataLoader(
+        batch_size=batch_size,
+        pin_memory=True,
+        num_workers=num_workers,
+        sampler=distributed_sampler
     )
 
 

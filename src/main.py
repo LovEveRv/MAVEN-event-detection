@@ -1,14 +1,27 @@
 import argparse
+import os
 import torch
 import torch.optim as optim
 import config
 from model import BertOneStageModel, BertTwoStageModel
 from train import train_one_stage_model, train_two_stage_model
-from dataloader import MavenLoader
+from dataloader import MavenLoader, DistributedMavenLoader
 from transformers import BertTokenizer
 
 
 def main(args):
+    if args.distributed:
+        if not args.cuda:
+            raise RuntimeError('"distributed" can only be set true when using cuda')
+        # used in distributed training
+        torch.cuda.set_device(args.local_rank)
+        os.environ['MASTER_ADDR'] = '127.0.0.1'
+        os.environ['MASTER_PORT'] = '7899'
+        torch.distributed.init_process_group(backend="nccl", init_method="env://")
+    else:
+        if args.local_rank != 0:
+            raise RuntimeError('"local_rank" should be set to 0 if not using distributed training')
+    
     tokenizer = BertTokenizer.from_pretrained(config.bert_pretrain_path)
     tokenizer.add_special_tokens({
         'additional_special_tokens': [config.trigger_start_token, config.trigger_end_token]
@@ -25,15 +38,23 @@ def main(args):
     model.bert.resize_token_embeddings(len(tokenizer))
     if args.cuda:
         model = model.cuda()
+    if args.distributed:
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
 
     optimizer = optim.Adam(model.parameters(), args.lr)
 
-    train_loader = MavenLoader(args.maven_dir, tokenizer, 'train', args.batch_size)
-    valid_loader = MavenLoader(args.maven_dir, tokenizer, 'val', args.batch_size)
-    test_loader  = MavenLoader(args.maven_dir, tokenizer, 'test', args.batch_size)
+    if args.distributed:
+        Loader = DistributedMavenLoader
+    else:
+        Loader = MavenLoader
+    train_loader = Loader(args.maven_dir, tokenizer, 'train', args.batch_size)
+    valid_loader = Loader(args.maven_dir, tokenizer, 'val', args.batch_size)
+    test_loader  = Loader(args.maven_dir, tokenizer, 'test', args.batch_size)
 
     if args.task == 'train':
         train(args, model, optimizer, train_loader, valid_loader, epochs=args.epochs)
+    else:
+        raise NotImplementedError()
 
 
 if __name__ == '__main__':
@@ -58,6 +79,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--logging', type=int, default=0,
         help='Logging interval, 0 for no logging')
+
+    parser.add_argument('--distributed', action='store_true', default=False,
+        help='Enable distributed training')
+    parser.add_argument('--local_rank', type=int, default=0,
+        help='Local rank in distributed training')
     
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()

@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import classification_report
 
 
-def get_submission(doc_ids, word_ids, preds):
+def get_submission(args, model, loader):
     pass
 
 
@@ -22,8 +23,10 @@ def evaluate_two_stage_model(args, model, loader):
     loss_cl_list = []
     pred_list = []
     gt_labels = []
+    doc_ids   = []
+    word_ids  = []
     for i, data in tqdm(enumerate(loader)):
-        _, _, tokens, labels, pn_labels = data
+        doc_id, word_id, tokens, labels, pn_labels = data
         if args.cuda:
             tokens = tokens.cuda()
             labels = labels.cuda()
@@ -34,6 +37,8 @@ def evaluate_two_stage_model(args, model, loader):
         loss_tf_list.append(loss_tf.item())
         loss_cl_list.append(loss_cl.item())
         
+        doc_ids += doc_id
+        word_ids += word_id
         gt_labels += labels.tolist()
         tf_pred = torch.argmax(logits_tf, dim=1).tolist()
         cl_pred = torch.argmax(logits_cl, dim=1).tolist()
@@ -42,6 +47,7 @@ def evaluate_two_stage_model(args, model, loader):
                 cl_pred[i] = 0
         pred_list += cl_pred
     
-    print('Average loss_tf: {}'.format(np.mean(epoch_loss_tf_list)))
-    print('Average loss_cl: {}'.format(np.mean(epoch_loss_cl_list)))
+    print('Average loss_tf: {}'.format(np.mean(loss_tf_list)))
+    print('Average loss_cl: {}'.format(np.mean(loss_cl_list)))
     print(classification_report(gt_labels, pred_list, digits=4))
+    return doc_ids, word_ids, pred_list

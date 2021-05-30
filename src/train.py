@@ -44,7 +44,10 @@ def train_two_stage_model(args, model, optimizer, train_loader, val_loader, epoc
         
         print('Epoch average loss_tf: {}'.format(np.mean(epoch_loss_tf_list)))
         print('Epoch average loss_cl: {}'.format(np.mean(epoch_loss_cl_list)))
-        evaluate_two_stage_model(args, model, val_loader)
-        # save checkpoint
-        ckpt_path = os.path.join(config.checkpoint_dir, 'bert-two-stage-{}.pkl'.format(epoch))
-        save_checkpoint(ckpt_path, model, optimizer)
+        if args.local_rank == 0:
+            evaluate_two_stage_model(args, model, val_loader)
+            # save checkpoint
+            ckpt_path = os.path.join(config.checkpoint_dir, 'bert-two-stage-{}.pkl'.format(epoch))
+            save_checkpoint(ckpt_path, model, optimizer)
+        if args.distributed:
+            torch.distributed.barrier()
