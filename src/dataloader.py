@@ -131,7 +131,7 @@ def DistributedMavenLoader(root, tokenizer, split, batch_size, num_workers=0):
     shuffle = split == 'train'
     distributed_sampler = data.distributed.DistributedSampler(dataset, shuffle=shuffle)
     return data.DataLoader(
-        dataset=dataset
+        dataset=dataset,
         batch_size=batch_size,
         pin_memory=True,
         num_workers=num_workers,
