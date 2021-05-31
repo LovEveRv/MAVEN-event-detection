@@ -11,6 +11,7 @@ def save_checkpoint(ckpt_path, model, optimizer):
 
 
 def load_checkpoint(ckpt_path, model, optimizer=None):
+    print('Loading checkpoint: {}'.format(ckpt_path))
     dct = torch.load(ckpt_path)
     model.load_state_dict(dct['model'])
     if optimizer:
