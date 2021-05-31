@@ -7,6 +7,7 @@ from model import BertOneStageModel, BertTwoStageModel
 from train import train_one_stage_model, train_two_stage_model
 from dataloader import MavenLoader, DistributedMavenLoader
 from evaluate import get_submission
+from utils import load_checkpoint
 from transformers import BertTokenizer
 
 
@@ -43,6 +44,8 @@ def main(args):
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
 
     optimizer = optim.Adam(model.parameters(), args.lr)
+    if args.ckpt is not None:
+        load_checkpoint(args.ckpt, model, optimizer)
 
     if args.distributed:
         Loader = DistributedMavenLoader
@@ -58,7 +61,11 @@ def main(args):
         with open(config.result_jsonl_path, 'w', encoding='utf-8') as f:
             f.write(result)
     elif args.task == 'test':
-        pass
+        if args.ckpt is None:
+            raise RuntimeError('"ckpt" should be appointed when testing')
+        result = get_submission(args, model, test_loader)
+        with open(config.result_jsonl_path, 'w', encoding='utf-8') as f:
+            f.write(result)
     else:
         raise NotImplementedError()
 
