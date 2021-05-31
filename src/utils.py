@@ -18,10 +18,10 @@ def load_checkpoint(ckpt_path, model, optimizer=None):
 
 
 def is_one_stage(model):
-    one_stage_models = set('bert-one-stage')
+    one_stage_models = ['bert-one-stage']
     return model in one_stage_models
 
 
 def is_two_stage(model):
-    two_stage_models = set('bert-two-stage')
+    two_stage_models = ['bert-two-stage']
     return model in two_stage_models
