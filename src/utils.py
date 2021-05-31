@@ -15,3 +15,13 @@ def load_checkpoint(ckpt_path, model, optimizer=None):
     model.load_state_dict(dct['model'])
     if optimizer:
         optimizer.load_state_dict(dct['optim'])
+
+
+def is_one_stage(model):
+    one_stage_models = set('bert-one-stage')
+    return model in one_stage_models
+
+
+def is_two_stage(model):
+    two_stage_models = set('bert-two-stage')
+    return model in two_stage_models

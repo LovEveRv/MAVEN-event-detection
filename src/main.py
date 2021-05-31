@@ -6,8 +6,8 @@ import config
 from model import BertOneStageModel, BertTwoStageModel
 from train import train_one_stage_model, train_two_stage_model
 from dataloader import MavenLoader, DistributedMavenLoader
-from evaluate import get_submission
-from utils import load_checkpoint
+from evaluate import get_submission, evaluate_one_stage_model, evaluate_two_stage_model
+from utils import load_checkpoint, is_one_stage, is_two_stage
 from transformers import BertTokenizer
 
 
@@ -29,10 +29,10 @@ def main(args):
         'additional_special_tokens': [config.trigger_start_token, config.trigger_end_token]
     })
 
-    if args.model == 'bert-one-stage':
+    if is_one_stage(args.model):
         model = BertOneStageModel(pretrained_path=config.bert_pretrain_path)
         train = train_one_stage_model
-    elif args.model == 'bert-two-stage':
+    elif is_two_stage(args.model):
         model = BertTwoStageModel(pretrained_path=config.bert_pretrain_path)
         train = train_two_stage_model
     else:
@@ -63,6 +63,10 @@ def main(args):
     elif args.task == 'test':
         if args.ckpt is None:
             raise RuntimeError('"ckpt" should be appointed when testing')
+        if is_one_stage(args.model):
+            evaluate_one_stage_model(args, model, valid_loader)
+        elif is_two_stage(args.model):
+            evaluate_two_stage_model(args, model, valid_loader)
         result = get_submission(args, model, test_loader)
         with open(config.result_jsonl_path, 'w', encoding='utf-8') as f:
             f.write(result)

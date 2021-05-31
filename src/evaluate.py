@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 import json
 from tqdm import tqdm
+from utils import is_one_stage, is_two_stage
 from sklearn.metrics import classification_report
 
 
@@ -66,7 +67,7 @@ def test(args, model, loader):
         if args.cuda:
             tokens = tokens.cuda()
         
-        if args.model == 'bert-two-stage':
+        if is_two_stage(args.model):
             logits_tf, logits_cl = model(tokens)
             tf_pred = torch.argmax(logits_tf, dim=1).tolist()
             cl_pred = torch.argmax(logits_cl, dim=1).tolist()
@@ -74,7 +75,7 @@ def test(args, model, loader):
                 if tf_pred[i] == 0:
                     cl_pred[i] = 0
             pred_list += cl_pred
-        elif args.model == 'bert-one-stage':
+        elif is_one_stage(args.model):
             logits = model(tokens)
             pred = torch.argmax(logits, dim=1).tolist()
             pred_list += pred
