@@ -54,6 +54,9 @@ def train_two_stage_model(args, model, optimizer, train_loader, val_loader, epoc
             evaluate_two_stage_model(args, model, val_loader)
             # save checkpoint
             ckpt_path = os.path.join(config.checkpoint_dir, 'bert-two-stage-{}.pkl'.format(epoch))
-            save_checkpoint(ckpt_path, model, optimizer)
+            if args.distributed:
+                save_checkpoint(ckpt_path, model.module, optimizer)
+            else:
+                save_checkpoint(ckpt_path, model, optimizer)
         if args.distributed:
             torch.distributed.barrier()
