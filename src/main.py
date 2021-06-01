@@ -38,14 +38,15 @@ def main(args):
     else:
         raise NotImplementedError()
     model.bert.resize_token_embeddings(len(tokenizer))
-    if args.cuda:
-        model = model.cuda()
-    if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
 
     optimizer = optim.Adam(model.parameters(), args.lr)
     if args.ckpt is not None:
         load_checkpoint(args.ckpt, model, optimizer)
+
+    if args.cuda:
+        model = model.cuda()
+    if args.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank], output_device=args.local_rank)
 
     if args.distributed:
         Loader = DistributedMavenLoader
