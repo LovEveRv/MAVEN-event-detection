@@ -121,7 +121,7 @@ class MavenSet(data.Dataset):
         if len(r_mask) > max_length:
             r_mask = r_mask[:max_length]
         inputs = self.tokenizer.encode_plus(
-            l_text + [config.trigger_start_token] + r_text, add_special_tokens=True, max_length=max_length, return_token_type_ids=True
+            l_text + [config.trigger_start_token] + r_text, add_special_tokens=True, truncation=True, max_length=max_length, return_token_type_ids=True
         )
         input_ids, token_type_ids = inputs["input_ids"], inputs["token_type_ids"]
         attention_mask = [1] * len(input_ids)
