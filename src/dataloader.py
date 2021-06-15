@@ -137,11 +137,11 @@ class MavenSet(data.Dataset):
         ret = (
             sample['doc_id'],
             sample['word_id'],
-            torch.tensor(input_ids),
-            torch.tensor(attention_mask),
+            torch.tensor(input_ids, dtype=torch.long),
+            torch.tensor(attention_mask, dtype=torch.long),
+            torch.tensor(token_type_ids, dtype=torch.long),
             torch.tensor(l_mask),
             torch.tensor(r_mask),
-            torch.tensor(token_type_ids),
             sample['type'],
             pn_label,
         )

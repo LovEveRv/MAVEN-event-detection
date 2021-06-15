@@ -3,7 +3,7 @@ import os
 import torch
 import torch.optim as optim
 import config
-from model import BertOneStageModel, BertTwoStageModel
+from model import BertTwoStageModel
 from train import train_one_stage_model, train_two_stage_model
 from dataloader import MavenLoader, DistributedMavenLoader
 from evaluate import get_submission, evaluate_one_stage_model, evaluate_two_stage_model
