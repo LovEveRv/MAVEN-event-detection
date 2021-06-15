@@ -32,7 +32,7 @@ class BertTwoStageModel(nn.Module):
         super().__init__()
         self.hidden_size = 768
         self.bert = BertModel.from_pretrained(pretrained_path)
-        # self.drop = nn.Dropout(dropout)
+        self.drop = nn.Dropout(dropout)
         self.maxpooling = nn.MaxPool1d(config.sentence_max_length)
         self.fc1 = nn.Linear(2 * self.hidden_size, 2, bias=True)
         self.fc2 = nn.Linear(2 * self.hidden_size, config.maven_class_numbers, bias=True)
@@ -55,7 +55,7 @@ class BertTwoStageModel(nn.Module):
         r_pooled = self.maxpooling(R).contiguous().view(batch_size, self.hidden_size)
         pooled = torch.cat((l_pooled, r_pooled), 1)
         pooled = pooled - torch.ones_like(pooled)
-        pooled = self.dropout(pooled)
+        pooled = self.drop(pooled)
         
         logits_tf = self.fc1(pooled)  # used for predicting T/F
         logits_cl = self.fc2(pooled)  # used for predicting type
