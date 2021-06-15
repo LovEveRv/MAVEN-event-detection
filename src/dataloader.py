@@ -42,22 +42,24 @@ class MavenSet(data.Dataset):
                     for word in event['mention']:
                         tokens = content[word['sent_id']]['tokens']
                         offset = word['offset']
-                        tokens = self._add_special_tokens(tokens, offset)
+                        # tokens = self._add_special_tokens(tokens, offset)
                         samples.append({
                             'doc_id': doc_id,
                             'word_id': word['id'],
                             'tokens': tokens,
+                            'offset': offset,
                             'type': type_id
                         })
                 for word in doc['negative_triggers']:
                     type_id = 0  # marks negative
                     tokens = content[word['sent_id']]['tokens']
                     offset = word['offset']
-                    tokens = self._add_special_tokens(tokens, offset)
+                    # tokens = self._add_special_tokens(tokens, offset)
                     samples.append({
                         'doc_id': doc_id,
                         'word_id': word['id'],
                         'tokens': tokens,
+                        'offset': offset,
                         'type': type_id
                     })
             else:
@@ -65,16 +67,17 @@ class MavenSet(data.Dataset):
                     type_id = -100  # need to predict
                     tokens = content[word['sent_id']]['tokens']
                     offset = word['offset']
-                    tokens = self._add_special_tokens(tokens, offset)
+                    # tokens = self._add_special_tokens(tokens, offset)
                     samples.append({
                         'doc_id': doc_id,
                         'word_id': word['id'],
                         'tokens': tokens,
+                        'offset': offset,
                         'type': type_id
                     })
         return samples
 
-    def _add_special_tokens(self, tokens, offset):
+    def _add_special_tokens(self, tokens, offset):  # not used anymore
         head = offset[0]
         tail = offset[1]
         # convert to lower case
@@ -104,14 +107,45 @@ class MavenSet(data.Dataset):
     
     def __getitem__(self, index):
         sample = self.data[index]
-        token_ids = self.tokenizer.convert_tokens_to_ids(sample['tokens'])
-        if len(token_ids) < config.sentence_max_length:  # pad to max
-            current_len = len(token_ids)
-            token_ids.extend([self.tokenizer.pad_token_id] * (config.sentence_max_length - current_len))
-        else:
-            token_ids = token_ids[:config.sentence_max_length]  # cut off at max length
         pn_label = 1 if sample['type'] > 0 else 0  # 1 for positive, 0 for negative
-        return sample['doc_id'], sample['word_id'], torch.tensor(token_ids), sample['type'], pn_label
+        head = sample['offset'][0]
+        tail = sample['offset'][1]
+        max_length = config.sentence_max_length
+        tokens = sample['tokens']
+        l_text = self.tokenizer.tokenize(' '.join(tokens[:head]))
+        r_text = self.tokenizer.tokenize(' '.join(tokens[head:tail])) + [config.trigger_end_token] + self.tokenizer.tokenize(' '.join(tokens[tail:]))
+        l_mask = [1.0 for _ in range(len(l_text) + 1)] + [0.0 for i in range(len(r_text) + 2)]
+        r_mask = [0.0 for _ in range(len(l_text) + 1)] + [1.0 for i in range(len(r_text) + 2)]
+        if len(l_mask) > max_length:
+            l_mask = l_mask[:max_length]
+        if len(r_mask) > max_length:
+            r_mask = r_mask[:max_length]
+        inputs = self.tokenizer.encode_plus(
+            l_text + [config.trigger_start_token] + r_text, add_special_tokens=True, max_length=max_length, return_token_type_ids=True
+        )
+        input_ids, token_type_ids = inputs["input_ids"], inputs["token_type_ids"]
+        attention_mask = [1] * len(input_ids)
+
+        # padding
+        padding_length = max_length - len(input_ids)
+        input_ids = input_ids + ([self.tokenizer.pad_token_id] * padding_length)
+        attention_mask = attention_mask + ([0] * padding_length)
+        token_type_ids = token_type_ids + ([0] * padding_length)
+        l_mask = l_mask + ([0.0] * padding_length)
+        r_mask = r_mask + ([0.0] * padding_length)
+        
+        ret = (
+            sample['doc_id'],
+            sample['word_id'],
+            torch.tensor(input_ids),
+            torch.tensor(attention_mask),
+            torch.tensor(l_mask),
+            torch.tensor(r_mask),
+            torch.tensor(token_type_ids),
+            sample['type'],
+            pn_label,
+        )
+        return ret
 
 
 def MavenLoader(root, tokenizer, split, batch_size, num_workers=0):

@@ -26,12 +26,16 @@ def evaluate_two_stage_model(args, model, loader):
     doc_ids   = []
     word_ids  = []
     for i, data in tqdm(enumerate(loader)):
-        doc_id, word_id, tokens, labels, pn_labels = data
+        doc_id, word_id, tokens, attention_mask, token_type_ids, l_mask, r_mask, labels, pn_labels = data
         if args.cuda:
             tokens = tokens.cuda()
+            attention_mask = attention_mask.cuda()
+            token_type_ids = token_type_ids.cuda()
+            l_mask = l_mask.cuda()
+            r_mask = r_mask.cuda()
             labels = labels.cuda()
             pn_labels = pn_labels.cuda()
-        logits_tf, logits_cl = model(tokens)
+        logits_tf, logits_cl = model(tokens, attention_mask, token_type_ids, l_mask, r_mask)
         loss_tf = criterion_tf(logits_tf, pn_labels)
         loss_cl = criterion_cl(logits_cl, labels)
         loss_tf_list.append(loss_tf.item())
@@ -61,24 +65,28 @@ def test(args, model, loader):
     doc_ids   = []
     word_ids  = []
     for i, data in tqdm(enumerate(loader)):
-        doc_id, word_id, tokens, _, _ = data
+        doc_id, word_id, tokens, attention_mask, token_type_ids, l_mask, r_mask, _, _ = data
         doc_ids += doc_id
         word_ids += word_id
         if args.cuda:
             tokens = tokens.cuda()
+            attention_mask = attention_mask.cuda()
+            token_type_ids = token_type_ids.cuda()
+            l_mask = l_mask.cuda()
+            r_mask = r_mask.cuda()
         
         if is_two_stage(args.model):
-            logits_tf, logits_cl = model(tokens)
+            logits_tf, logits_cl = model(tokens, attention_mask, token_type_ids, l_mask, r_mask)
             tf_pred = torch.argmax(logits_tf, dim=1).tolist()
             cl_pred = torch.argmax(logits_cl, dim=1).tolist()
             for i in range(len(tf_pred)):
                 if tf_pred[i] == 0:
                     cl_pred[i] = 0
             pred_list += cl_pred
-        elif is_one_stage(args.model):
-            logits = model(tokens)
-            pred = torch.argmax(logits, dim=1).tolist()
-            pred_list += pred
+        # elif is_one_stage(args.model):
+        #     logits = model(tokens)
+        #     pred = torch.argmax(logits, dim=1).tolist()
+        #     pred_list += pred
         else:
             return NotImplementedError()
     return doc_ids, word_ids, pred_list

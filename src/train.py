@@ -25,12 +25,16 @@ def train_two_stage_model(args, model, optimizer, train_loader, val_loader, epoc
         tmp_loss_tf_list = []
         tmp_loss_cl_list = []
         for i, data in tqdm(enumerate(train_loader)):
-            _, _, tokens, labels, pn_labels = data
+            _, _, tokens, attention_mask, token_type_ids, l_mask, r_mask, labels, pn_labels = data
             if args.cuda:
                 tokens = tokens.cuda()
+                attention_mask = attention_mask.cuda()
+                token_type_ids = token_type_ids.cuda()
+                l_mask = l_mask.cuda()
+                r_mask = r_mask.cuda()
                 labels = labels.cuda()
                 pn_labels = pn_labels.cuda()
-            logits_tf, logits_cl = model(tokens)
+            logits_tf, logits_cl = model(tokens, attention_mask, token_type_ids, l_mask, r_mask)
             loss_tf = criterion_tf(logits_tf, pn_labels)
             loss_cl = criterion_cl(logits_cl, labels)
             epoch_loss_tf_list.append(loss_tf.item())
