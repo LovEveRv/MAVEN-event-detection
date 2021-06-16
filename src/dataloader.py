@@ -112,6 +112,8 @@ class MavenSet(data.Dataset):
         tail = sample['offset'][1]
         max_length = config.sentence_max_length
         tokens = sample['tokens']
+        for i in range(len(tokens)):
+            tokens[i] = tokens[i].lower()
         l_text = self.tokenizer.tokenize(' '.join(tokens[:head]))
         r_text = self.tokenizer.tokenize(' '.join(tokens[head:tail])) + [config.trigger_end_token] + self.tokenizer.tokenize(' '.join(tokens[tail:]))
         l_mask = [1.0 for _ in range(len(l_text) + 1)] + [0.0 for i in range(len(r_text) + 2)]
