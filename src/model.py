@@ -34,7 +34,7 @@ class BertTwoStageModel(nn.Module):
         self.bert = BertModel.from_pretrained(pretrained_path)
         self.drop = nn.Dropout(dropout)
         self.maxpooling = nn.MaxPool1d(config.sentence_max_length)
-        self.fc1 = nn.Linear(2 * self.hidden_size, 2, bias=True)
+        self.fc1 = nn.Linear(2 * self.hidden_size, 6, bias=True)
         self.fc2 = nn.Linear(2 * self.hidden_size, config.maven_class_numbers, bias=True)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None, l_mask=None, r_mask=None):
